@@ -1,0 +1,117 @@
+﻿name: Build on MacOS
+
+on:
+    workflow_call:
+        inputs:
+            commit-sha:
+                type: string
+                required: true
+        outputs:
+            runid:
+                value: ${{github.run_id}}
+    workflow_dispatch:
+        inputs:
+            commit-sha:
+                type: string
+                description: Target commit
+                required: true
+
+jobs:
+    build:
+        runs-on: macos-latest
+        steps:
+
+          - name: stop
+            shell: bash
+            run: ffeuhifweui
+
+          - name: Checkout BGFX
+            uses: actions/checkout@v4
+            with:
+                repository: bkaradzic/bgfx
+                path: bgfx
+        
+          - name: Checkout BX
+            uses: actions/checkout@v4
+            with:
+                repository: bkaradzic/bx
+                path: bx
+
+          - name: Checkout BIMG
+            uses: actions/checkout@v4
+            with:
+                repository: bkaradzic/bimg
+                path: bimg
+
+          - name: Get Additional Resources
+            shell: bash
+            run: |
+                echo ${{inputs.commit-sha}} >> VERSION.txt
+                mkdir -p temp/include
+                cp -a bgfx/include/* temp/include
+                cp -a bx/include/* temp/include
+                cp -a bimg/include/* temp/include
+
+          - name: Build MacOS x64
+            shell: bash
+            run: |
+                cd bgfx
+                ../bx/tools/bin/darwin/genie --with-tools --platform=x64 --xcode=osx xcode11
+                cd .build/projects/xcode11-osx
+                xcodebuild -project bgfx.xcodeproj -scheme bgfx -configuration Debug ARCHS=x86_64
+                xcodebuild -project bx.xcodeproj -scheme bx -configuration Debug ARCHS=x86_64
+                xcodebuild -project bimg.xcodeproj -scheme bimg -configuration Debug ARCHS=x86_64
+                xcodebuild -project bgfx.xcodeproj -scheme bgfx -configuration Release ARCHS=x86_64
+                xcodebuild -project bx.xcodeproj -scheme bx -configuration Release ARCHS=x86_64
+                xcodebuild -project bimg.xcodeproj -scheme bimg -configuration Release ARCHS=x86_64
+                xcodebuild -project fcpp.xcodeproj -scheme fcpp -configuration Debug ARCHS=x86_64
+                xcodebuild -project glslang.xcodeproj -scheme glslang -configuration Debug ARCHS=x86_64
+                xcodebuild -project glsl-optimizer.xcodeproj -scheme glsl-optimizer -configuration Debug ARCHS=x86_64
+                xcodebuild -project spirv-opt.xcodeproj -scheme spirv-opt -configuration Debug ARCHS=x86_64
+                xcodebuild -project spirv-cross.xcodeproj -scheme spirv-cross -configuration Debug ARCHS=x86_64
+                xcodebuild -project shaderc.xcodeproj -scheme "shaderc Release" -configuration Release ARCHS=x86_64
+                cd ../..
+                ls
+
+          - name: Compress Product x64
+            shell: bash
+            run: |
+                mv bgfx/scripts/shadercRelease shaderc
+                7z a bgfx_macos_x64_debug.7z ./bgfx/scripts/libbgfxDebug.a ./bx/scripts/libbxDebug.a ./bimg/scripts/libbimgDebug.a shaderc ./temp/include VERSION.txt
+                7z a bgfx_macos_x64_release.7z ./bgfx/scripts/libbgfxRelease.a ./bx/scripts/libbxRelease.a ./bimg/scripts/libbimgRelease.a shaderc ./temp/include VERSION.txt
+
+          - name: Build MacOS arm64
+            shell: bash
+            run: |
+                cd bgfx
+                ../bx/tools/bin/darwin/genie --with-tools --platform=ARM64 --xcode=osx xcode11
+                cd .build/projects/xcode11-osx
+                xcodebuild -project bgfx.xcodeproj -scheme bgfx -configuration Debug ARCHS=arm64
+                xcodebuild -project bx.xcodeproj -scheme bx -configuration Debug ARCHS=arm64
+                xcodebuild -project bimg.xcodeproj -scheme bimg -configuration Debug ARCHS=arm64
+                xcodebuild -project bgfx.xcodeproj -scheme bgfx -configuration Release ARCHS=arm64
+                xcodebuild -project bx.xcodeproj -scheme bx -configuration Release ARCHS=arm64
+                xcodebuild -project bimg.xcodeproj -scheme bimg -configuration Release ARCHS=arm64
+                xcodebuild -project fcpp.xcodeproj -scheme fcpp -configuration Debug ARCHS=arm64
+                xcodebuild -project glslang.xcodeproj -scheme glslang -configuration Debug ARCHS=arm64
+                xcodebuild -project glsl-optimizer.xcodeproj -scheme glsl-optimizer -configuration Debug ARCHS=arm64
+                xcodebuild -project spirv-opt.xcodeproj -scheme spirv-opt -configuration Debug ARCHS=arm64
+                xcodebuild -project spirv-cross.xcodeproj -scheme spirv-cross -configuration Debug ARCHS=arm64
+                xcodebuild -project shaderc.xcodeproj -scheme "shaderc Release" -configuration Release ARCHS=arm64
+                cd ../..
+                ls
+
+          - name: Compress Product arm64
+            shell: bash
+            run: |
+                mv bgfx/scripts/shadercRelease shaderc
+                7z a bgfx_macos_arm64_debug.7z ./bgfx/scripts/libbgfxDebug.a ./bx/scripts/libbxDebug.a ./bimg/scripts/libbimgDebug.a shaderc ./temp/include VERSION.txt
+                7z a bgfx_macos_arm64_release.7z ./bgfx/scripts/libbgfxRelease.a ./bx/scripts/libbxRelease.a ./bimg/scripts/libbimgRelease.a shaderc ./temp/include VERSION.txt
+
+          - name: Upload Archive
+            uses: actions/upload-artifact@v4
+            with:
+                name: bgfx_macos
+                path: |
+                    *.7z
+                retention-days: 7
