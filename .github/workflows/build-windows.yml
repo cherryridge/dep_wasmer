@@ -35,6 +35,11 @@ jobs:
                 toolchain: stable
                 targets: x86_64-pc-windows-msvc, aarch64-pc-windows-msvc
 
+          - name: Install LLVM
+            shell: pwsh
+            run: |
+                choco install llvm -y
+
           - name: Build Windows x64 Debug
             shell: pwsh
             run: |
