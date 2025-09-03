@@ -29,32 +29,24 @@ jobs:
                 ref: ${{inputs.commit-sha}}
                 submodules: recursive
 
-          - name: Install rust
+          - name: Install Rust
             uses: dtolnay/rust-toolchain@v1
             with:
                 toolchain: stable
-                targets: x86_64-pc-windows-msvc
-
-          - name: Install Gmake
-            run: choco install make -y
+                targets: x86_64-pc-windows-msvc, aarch64-pc-windows-msvc
 
           - name: Build Windows x64 Debug
             shell: pwsh
             run: |
                 cd wasmer
                 cargo build -p wasmer-c-api --target x86_64-pc-windows-msvc
-                dir package
-                dir package\include
-                dir package\lib
+                dir
 
           - name: Build Windows x64 Release
             shell: pwsh
             run: |
                 cd wasmer
                 cargo build -p wasmer-c-api --target x86_64-pc-windows-msvc --release
-                dir package
-                dir package\include
-                dir package\lib
 
           - name: stop
             shell: pwsh

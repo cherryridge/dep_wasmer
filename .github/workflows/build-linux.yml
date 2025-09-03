@@ -25,23 +25,19 @@ jobs:
             shell: bash
             run: ffeuhifweui
 
-          - name: Checkout BGFX
+          - name: Checkout Wasmer
             uses: actions/checkout@v4
             with:
-                repository: bkaradzic/bgfx
-                path: bgfx
-        
-          - name: Checkout BX
-            uses: actions/checkout@v4
-            with:
-                repository: bkaradzic/bx
-                path: bx
+                repository: wasmerio/wasmer
+                path: wasmer
+                ref: ${{inputs.commit-sha}}
+                submodules: recursive
 
-          - name: Checkout BIMG
-            uses: actions/checkout@v4
+          - name: Install Rust
+            uses: dtolnay/rust-toolchain@v1
             with:
-                repository: bkaradzic/bimg
-                path: bimg
+                toolchain: stable
+                targets: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu
 
           - name: Install Dependencies
             shell: bash
