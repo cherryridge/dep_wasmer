@@ -39,25 +39,25 @@ jobs:
             shell: pwsh
             run: |
                 cd wasmer
-                cargo build -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
 
           - name: Build Windows x64 Release
             shell: pwsh
             run: |
                 cd wasmer
-                cargo build -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
 
           - name: Build Windows arm64 Debug
             shell: pwsh
             run: |
                 cd wasmer
-                cargo build -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
 
           - name: Build Windows arm64 Release
             shell: pwsh
             run: |
                 cd wasmer
-                cargo build -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
 
           - name: Compress Product
             shell: pwsh
