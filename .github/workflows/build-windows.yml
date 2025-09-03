@@ -41,16 +41,18 @@ jobs:
                 cd wasmer
                 cargo build -p wasmer-c-api --target x86_64-pc-windows-msvc
                 dir
+                cd target
+                dir
+
+          - name: stop
+            shell: pwsh
+            run: fwejfiowe
 
           - name: Build Windows x64 Release
             shell: pwsh
             run: |
                 cd wasmer
                 cargo build -p wasmer-c-api --target x86_64-pc-windows-msvc --release
-
-          - name: stop
-            shell: pwsh
-            run: fwejfiowe
 
           - name: Delete Projects
             shell: pwsh
