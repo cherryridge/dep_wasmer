@@ -46,7 +46,7 @@ jobs:
             run: |
                 Invoke-WebRequest -Uri https://github.com/vovkos/llvm-package-windows/releases/download/llvm-18.1.8/llvm-18.1.8-windows-amd64-msvc17-libcmt.7z -OutFile llvm-18.1.8-windows-amd64-msvc17-libcmt.7z
                 7z x llvm-18.1.8-windows-amd64-msvc17-libcmt.7z
-                $prefix = "${{github.workspace}}\llvm"
+                $prefix = "${{github.workspace}}\llvm-18.1.8-windows-amd64-msvc17-libcmt"
                 "LLVM_SYS_180_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LLVM_CONFIG_PATH=$prefix\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "$prefix\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
