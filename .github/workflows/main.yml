@@ -114,29 +114,52 @@ jobs:
             contents: write
         steps:
 
-          - name: Download Artifact wasmer_windows
+          - name: Download Artifact wasmer_windows_x64
             uses: actions/download-artifact@v4
             with:
-                name: wasmer_windows
-                path: wasmer_windows
+                name: wasmer_windows_x64
+                path: wasmer_windows_x64
+                github-token: ${{github.token}}
+                repository: ${{github.repository}}
+                run-id: ${{needs.build-windows.outputs.runid}}
+
+          - name: Download Artifact wasmer_windows_arm64
+            shell: bash
+            run: |
+                echo "Windows arm64 build is not supported."
+
+          - name: Download Artifact wasmer_linux_x64
+            uses: actions/download-artifact@v4
+            with:
+                name: wasmer_linux_x64
+                path: wasmer_linux_x64
+                github-token: ${{github.token}}
+                repository: ${{github.repository}}
+                run-id: ${{needs.build-linux.outputs.runid}}
+
+          - name: Download Artifact wasmer_linux_arm64
+            uses: actions/download-artifact@v4
+            with:
+                name: wasmer_linux_arm64
+                path: wasmer_linux_arm64
+                github-token: ${{github.token}}
+                repository: ${{github.repository}}
+                run-id: ${{needs.build-linux.outputs.runid}}
+
+          - name: Download Artifact wasmer_macos_x64
+            uses: actions/download-artifact@v4
+            with:
+                name: wasmer_macos_x64
+                path: wasmer_macos_x64
                 github-token: ${{github.token}}
                 repository: ${{github.repository}}
                 run-id: ${{needs.build-macos.outputs.runid}}
 
-          - name: Download Artifact wasmer_linux
+          - name: Download Artifact wasmer_macos_arm64
             uses: actions/download-artifact@v4
             with:
-                name: wasmer_linux
-                path: wasmer_linux
-                github-token: ${{github.token}}
-                repository: ${{github.repository}}
-                run-id: ${{needs.build-macos.outputs.runid}}
-
-          - name: Download Artifact wasmer_macos
-            uses: actions/download-artifact@v4
-            with:
-                name: wasmer_macos
-                path: wasmer_macos
+                name: wasmer_macos_arm64
+                path: wasmer_macos_arm64
                 github-token: ${{github.token}}
                 repository: ${{github.repository}}
                 run-id: ${{needs.build-macos.outputs.runid}}
@@ -144,7 +167,7 @@ jobs:
           - name: Release Artifacts
             uses: ncipollo/release-action@v1.16.0
             with:
-                artifacts: wasmer_windows/wasmer_windows_x64_debug.7z, wasmer_windows/wasmer_windows_x64_release.7z, wasmer_windows/wasmer_windows_arm64_debug.7z, wasmer_windows/wasmer_windows_arm64_release.7z, wasmer_linux/wasmer_linux_x64_debug.7z, wasmer_linux/wasmer_linux_x64_release.7z, wasmer_linux/wasmer_linux_arm64_debug.7z, wasmer_linux/wasmer_linux_arm64_release.7z, wasmer_macos/wasmer_macos_x64_debug.7z, wasmer_macos/wasmer_macos_x64_release.7z, wasmer_macos/wasmer_macos_arm64_debug.7z, wasmer_macos/wasmer_macos_arm64_release.7z
+                artifacts: wasmer_windows/wasmer_windows_x64_debug.7z, wasmer_windows/wasmer_windows_x64_release.7z, wasmer_linux/wasmer_linux_x64_debug.7z, wasmer_linux/wasmer_linux_x64_release.7z, wasmer_linux/wasmer_linux_arm64_debug.7z, wasmer_linux/wasmer_linux_arm64_release.7z, wasmer_macos/wasmer_macos_x64_debug.7z, wasmer_macos/wasmer_macos_x64_release.7z, wasmer_macos/wasmer_macos_arm64_debug.7z, wasmer_macos/wasmer_macos_arm64_release.7z
                 commit: ${{needs.update-commit.outputs.updated_commit}}
                 tag: ${{needs.check.outputs.tag}}
                 body: Build for commit ${{needs.check.outputs.latest_commit}}.
