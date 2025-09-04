@@ -41,12 +41,12 @@ jobs:
             run: |
                 cd wasmer
                 $metajson = cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features | ConvertFrom-Json -AsHashTable
-                $metajson
                 $pkg = $metajson.packages | Where-Object { $_.name -eq "llvm-sys" } | Select-Object -First 1
                 $sysMajor = [int]($pkg.version.Split('.')[0])
                 $llvmMajor = [math]::Floor($sysMajor / 10)
                 $llvmMinor = $sysMajor % 10
-                $version = "$llvmMajor.$llvmMinor"
+                #LLVM don't have version 18.0 and I don't know why Wasmer use it
+                $version = "$llvmMajor"
                 "sysMajor=$sysMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
                 "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
