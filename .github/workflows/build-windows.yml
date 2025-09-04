@@ -40,13 +40,13 @@ jobs:
             with:
                 arch: x64
 
-          - name: Get LLVM 18 Straight I Don't Care About Updating This Section Later It's Just Too Difficult To Make It General
+          - name: Get LLVM 18 (I don't care about updating this section later. It's just too difficult to make the process general)
             shell: pwsh
             id: llvm
             run: |
-                Invoke-WebRequest -Uri https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-pc-windows-msvc.tar.xz -OutFile clang+llvm-18.1.8-x86_64-pc-windows-msvc.tar.xz
-                tar -xJf clang+llvm-18.1.8-x86_64-pc-windows-msvc.tar.xz
-                $prefix = "${{github.workspace}}\clang+llvm-18.1.8-x86_64-pc-windows-msvc"
+                Invoke-WebRequest -Uri https://github.com/vovkos/llvm-package-windows/releases/download/llvm-18.1.8/llvm-18.1.8-windows-amd64-msvc17-libcmt.7z -OutFile llvm-18.1.8-windows-amd64-msvc17-libcmt.7z
+                tar -xJf llvm-18.1.8-windows-amd64-msvc17-libcmt.7z
+                $prefix = "${{github.workspace}}\llvm-18.1.8-windows-amd64-msvc17-libcmt"
                 "LLVM_SYS_180_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LLVM_CONFIG_PATH=$prefix\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "$prefix\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
