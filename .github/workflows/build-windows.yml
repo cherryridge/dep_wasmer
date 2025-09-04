@@ -50,13 +50,13 @@ jobs:
             shell: pwsh
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 -Ctarget-feature=+crt-static --crate-type=staticlib
 
           - name: Build Windows x64 Release
             shell: pwsh
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- -Ctarget-feature=+crt-static --crate-type=staticlib
 
           - name: Compress Product
             shell: pwsh
@@ -100,7 +100,7 @@ jobs:
             run: |
                 git clone https://github.com/microsoft/vcpkg
                 .\vcpkg\bootstrap-vcpkg.bat
-                .\vcpkg\vcpkg.exe install llvm[tools,target-aarch64]:arm64-windows
+                .\vcpkg\vcpkg.exe install llvm[tools,target-aarch64]:arm64-windows --allow-unsupported
                 $prefix = "${{github.workspace}}\vcpkg\installed\arm64-windows"
                 "LLVM_SYS_180_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LLVM_CONFIG_PATH=$prefix\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -110,13 +110,13 @@ jobs:
             shell: pwsh
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 -Ctarget-feature=+crt-static --crate-type=staticlib
 
           - name: Build Windows arm64 Release
             shell: pwsh
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- -Ctarget-feature=+crt-static --crate-type=staticlib
 
           - name: Compress Product
             shell: pwsh
