@@ -56,11 +56,15 @@ jobs:
             with:
                 version: ${{steps.llvm.outputs.version}}
 
+          - name: whatever this is
+            shell: pwsh
+            run: |
+                Add-Content -Path $env:GITHUB_ENV -Value "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=${{env.LLVM_PATH}}"
+
           - name: Build Windows x64 Debug
             shell: pwsh
             run: |
                 $env:LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX = "${{env.LLVM_PATH}}"
-                Write-Host "LLVM prefix = $env:LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX"
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
 
