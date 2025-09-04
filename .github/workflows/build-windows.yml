@@ -35,10 +35,28 @@ jobs:
                 toolchain: stable
                 targets: x86_64-pc-windows-msvc, aarch64-pc-windows-msvc
 
+          - name: Resolve LLVM Version
+            shell: pwsh
+            id: llvm
+            run: |
+                $metajson = cargo metadata -p wasmer-c-api --features "$env:WASMER_FEATURES" --no-default-features --format-version=1 | ConvertFrom-Json
+                $pkg = $metajson.packages | Where-Object { $_.name -eq "llvm-sys" } | Select-Object -First 1
+                $sysMajor = [int]($crateVer.Split('.')[0])
+                $llvmMajor = [math]::Floor($sysMajor / 10)
+                $llvmMinor = $sysMajor % 10
+                $version = "$llvmMajor.$llvmMinor"
+                "sysMajor=$sysMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
           - name: Install LLVM
+            uses: KyleMayes/install-llvm-action@v2
+            with:
+                version: ${{steps.llvm.outputs.version}}
+
+          - name: Config LLVM
             shell: pwsh
             run: |
-                choco install llvm -y
+                "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=${{env.LLVM_PATH}}" | Out-File $env:GITHUB_ENV -Append
 
           - name: Build Windows x64 Debug
             shell: pwsh
