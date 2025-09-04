@@ -60,11 +60,12 @@ jobs:
             shell: pwsh
             run: |
                 "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$env:LLVM_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "LLVM_CONFIG_PATH=$env:LLVM_PATH\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "LIBCLANG_PATH=$env:LLVM_PATH\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
           - name: Build Windows x64 Debug
             shell: pwsh
             run: |
-                Set-Item -Path "Env:LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX" -Value $env:LLVM_PATH
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
 
