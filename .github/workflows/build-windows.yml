@@ -35,28 +35,32 @@ jobs:
                 toolchain: stable
                 targets: x86_64-pc-windows-msvc
 
-          - name: Install LLVM 18
+          - name: Maybe Conda Can Save Us (Probably not)
+            uses: conda-incubator/setup-miniconda@v3
+            with:
+                auto-activate-base: true
+                activate-environment: ""
+
+          - name: LLVM
             shell: pwsh
             run: |
-                Invoke-WebRequest -Uri https://github.com/vovkos/llvm-package-windows/releases/download/llvm-18.1.8/llvm-18.1.8-windows-amd64-msvc17-libcmt.7z -OutFile llvm.7z
-                7z x llvm.7z
-                dir
-                $prefix = "${{github.workspace}}\llvm-18.1.8-windows-amd64-msvc17-libcmt"
-                "LLVM_SYS_180_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                "LLVM_CONFIG_PATH=$prefix\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                "$prefix\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+                conda config --add channels conda-forge
+                conda install -y llvmdev=18
+                "LLVM_SYS_180_PREFIX=$env:CONDA_PREFIX\Library" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "LLVM_CONFIG_PATH=$env:CONDA_PREFIX\Library\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "$env:CONDA_PREFIX\Library\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
           - name: Build Windows x64 Debug
             shell: pwsh
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 -Ctarget-feature=+crt-static --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat,staticlib" -- -Cdebuginfo=2 -Ctarget-feature=+crt-static --crate-type=staticlib
 
           - name: Build Windows x64 Release
             shell: pwsh
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- -Ctarget-feature=+crt-static --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat,staticlib" --release -- -Ctarget-feature=+crt-static --crate-type=staticlib
 
           - name: Compress Product
             shell: pwsh
