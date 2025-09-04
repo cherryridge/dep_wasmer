@@ -68,16 +68,17 @@ jobs:
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target x86_64-unknown-linux-gnu --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
 
-          - name: Build Linux arm64
+          - name: Build Linux arm64 Debug
             shell: bash
             run: |
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target aarch64-unknown-linux-gnu --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
 
-          - name: Build Linux arm64
+          - name: Build Linux arm64 Release
             shell: bash
             run: |
-                
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target aarch64-unknown-linux-gnu --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
 
           - name: Compress Product
             shell: bash
