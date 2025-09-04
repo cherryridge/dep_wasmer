@@ -17,7 +17,7 @@ on:
                 required: true
 
 jobs:
-    build:
+    x64:
         runs-on: windows-latest
         steps:
 
@@ -33,7 +33,12 @@ jobs:
             uses: dtolnay/rust-toolchain@v1
             with:
                 toolchain: stable
-                targets: x86_64-pc-windows-msvc, aarch64-pc-windows-msvc
+                targets: x86_64-pc-windows-msvc
+
+          - name: MSVC env
+            uses: ilammy/msvc-dev-cmd@v1
+            with:
+                arch: x64
 
           - name: Resolve LLVM Version
             shell: pwsh
@@ -42,31 +47,26 @@ jobs:
                 cd wasmer
                 $metajson = cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features | ConvertFrom-Json -AsHashTable
                 $pkg = $metajson.packages | Where-Object { $_.name -eq "llvm-sys" } | Select-Object -First 1
-                $sysMajor = [int]($pkg.version.Split('.')[0])
-                $llvmMajor = [math]::Floor($sysMajor / 10)
-                $llvmMinor = $sysMajor % 10
-                #LLVM don't have version 18.0 and I don't know why llvm-sys' version is 180 instead of 181
-                #$version = "$llvmMajor.$llvmMinor"
-                $version = "$llvmMajor"
-                "sysMajor=$sysMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-                "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                $sysVersion = [int]($pkg.version.Split('.')[0])
+                $llvmMajor = [math]::Floor($sysVersion / 10)
+                $llvmMinor = $sysVersion % 10
+                "sysVersion=$sysVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                "llvmMajor=$llvmMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                "llvmMinor=$llvmMinor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
-          - name: Install LLVM x64
-            uses: KyleMayes/install-llvm-action@v2
-            with:
-                version: ${{steps.llvm.outputs.version}}
-                arch: x64
-
-          - name: whatever this is
+          - name: Build LLVM ${{steps.llvm.outputs.llvmMajor}}.${{steps.llvm.outputs.llvmMinor}}
             shell: pwsh
             run: |
-                cd "C:\Program Files\LLVM"
+                git clone https://github.com/llvm/llvm-project --depth 1 --branch release/${{steps.llvm.outputs.llvmMajor}}.x
+                mkdir llvm-build
+                $prefix = "${{github.workspace}}\llvm-${{steps.llvm.outputs.llvmMajor}}.${{steps.llvm.outputs.llvmMinor}}-x64"
+                cmake -S llvm-project/llvm -B llvm-build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TARGETS_TO_BUILD="X86" -DCMAKE_INSTALL_PREFIX=$prefix -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_DOCS=OFF -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_LLVM_DYLIB=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_TERMINFO=OFF
+                cmake --build llvm-build --config Release --target install
+                "LLVM_SYS_${{steps.llvm.outputs.sysVersion}}=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "LLVM_CONFIG_PATH=$prefix\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "$prefix\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+                cd llvm-build
                 dir
-                cd bin
-                dir
-                "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$env:LLVM_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                "LLVM_CONFIG_PATH=$env:LLVM_PATH\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                "LIBCLANG_PATH=$env:LLVM_PATH\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
           - name: Build Windows x64 Debug
             shell: pwsh
