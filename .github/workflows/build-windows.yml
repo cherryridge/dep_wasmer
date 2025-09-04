@@ -46,6 +46,7 @@ jobs:
                 $llvmMajor = [math]::Floor($sysMajor / 10)
                 $llvmMinor = $sysMajor % 10
                 #LLVM don't have version 18.0 and I don't know why llvm-sys' version is 180 instead of 181
+                #$version = "$llvmMajor.$llvmMinor"
                 $version = "$llvmMajor"
                 "sysMajor=$sysMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
                 "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
@@ -55,31 +56,33 @@ jobs:
             with:
                 version: ${{steps.llvm.outputs.version}}
 
+          - name: Configure LLVM
+            shell: pwsh
+            run: |
+                "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=${{env.LLVM_PATH}}" | Out-File -FilePath $env:GITHUB_ENV -Append
+                "LLVM_ENABLE=1" | Out-File -FilePath $env:GITHUB_ENV -Append
+
           - name: Build Windows x64 Debug
             shell: pwsh
             run: |
-                $env:LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX = "${{env.LLVM_PATH}}"
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
 
           - name: Build Windows x64 Release
             shell: pwsh
             run: |
-                $env:LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX = "${{env.LLVM_PATH}}"
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
 
           - name: Build Windows arm64 Debug
             shell: pwsh
             run: |
-                $env:LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX = "${{env.LLVM_PATH}}"
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
 
           - name: Build Windows arm64 Release
             shell: pwsh
             run: |
-                $env:LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX = "${{env.LLVM_PATH}}"
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
 
