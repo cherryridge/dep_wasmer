@@ -51,14 +51,19 @@ jobs:
                 "sysMajor=$sysMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
                 "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
-          - name: Install LLVM
+          - name: Install LLVM x64
             uses: KyleMayes/install-llvm-action@v2
             with:
                 version: ${{steps.llvm.outputs.version}}
+                arch: x64
 
           - name: whatever this is
             shell: pwsh
             run: |
+                cd "C:\Program Files\LLVM"
+                dir
+                cd bin
+                dir
                 "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$env:LLVM_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LLVM_CONFIG_PATH=$env:LLVM_PATH\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LIBCLANG_PATH=$env:LLVM_PATH\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -74,6 +79,12 @@ jobs:
             run: |
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
+
+          - name: Install LLVM arm64
+            uses: KyleMayes/install-llvm-action@v2
+            with:
+                version: ${{steps.llvm.outputs.version}}
+                arch: arm64
 
           - name: Build Windows arm64 Debug
             shell: pwsh
