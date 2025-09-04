@@ -35,24 +35,16 @@ jobs:
                 toolchain: stable
                 targets: x86_64-pc-windows-msvc
 
-          - name: Setup MSVC Environment
-            uses: ilammy/msvc-dev-cmd@v1
-            with:
-                arch: x64
-
-          - name: Get LLVM 18 (I don't care about updating this section later. It's just too difficult to make the process general)
+          - name: Get LLVM 18 From vcpkg
             shell: pwsh
-            id: llvm
             run: |
-                Invoke-WebRequest -Uri https://github.com/vovkos/llvm-package-windows/releases/download/llvm-18.1.8/llvm-18.1.8-windows-amd64-msvc17-libcmt.7z -OutFile llvm-18.1.8-windows-amd64-msvc17-libcmt.7z
-                7z x llvm-18.1.8-windows-amd64-msvc17-libcmt.7z
-                $prefix = "${{github.workspace}}\llvm-18.1.8-windows-amd64-msvc17-libcmt"
+                git clone https://github.com/microsoft/vcpkg
+                .\vcpkg\bootstrap-vcpkg.bat
+                .\vcpkg\vcpkg.exe install llvm[tools]:x64-windows
+                $prefix = "${{github.workspace}}\vcpkg\installed\x64-windows"
                 "LLVM_SYS_180_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LLVM_CONFIG_PATH=$prefix\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "$prefix\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-                dir
-                cd llvm-18.1.8-windows-amd64-msvc17-libcmt
-                dir
 
           - name: Build Windows x64 Debug
             shell: pwsh
@@ -103,38 +95,16 @@ jobs:
                 toolchain: stable
                 targets: aarch64-pc-windows-msvc
 
-          - name: Setup MSVC Environment
-            uses: ilammy/msvc-dev-cmd@v1
-            with:
-                arch: arm64
-
-          - name: Resolve LLVM Version
-            shell: pwsh
-            id: llvm
-            run: |
-                cd wasmer
-                $metajson = cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features | ConvertFrom-Json -AsHashTable
-                $pkg = $metajson.packages | Where-Object { $_.name -eq "llvm-sys" } | Select-Object -First 1
-                $sysVersion = [int]($pkg.version.Split('.')[0])
-                $llvmMajor = [math]::Floor($sysVersion / 10)
-                $llvmMinor = $sysVersion % 10
-                "sysVersion=$sysVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-                "llvmMajor=$llvmMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-                "llvmMinor=$llvmMinor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
-          - name: Build LLVM ${{steps.llvm.outputs.llvmMajor}}.${{steps.llvm.outputs.llvmMinor}}
+          - name: Get LLVM 18 From vcpkg
             shell: pwsh
             run: |
-                git clone https://github.com/llvm/llvm-project --depth 1 --branch release/${{steps.llvm.outputs.llvmMajor}}.x
-                mkdir llvm-build
-                $prefix = "${{github.workspace}}\llvm-build\Release"
-                cmake -S llvm-project/llvm -B llvm-build -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TARGETS_TO_BUILD="X86" -DCMAKE_INSTALL_PREFIX=$prefix -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_DOCS=OFF -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_LLVM_DYLIB=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_TERMINFO=OFF
-                cmake --build llvm-build --config Release --target install
-                "LLVM_SYS_${{steps.llvm.outputs.sysVersion}}_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                git clone https://github.com/microsoft/vcpkg
+                .\vcpkg\bootstrap-vcpkg.bat
+                .\vcpkg\vcpkg.exe install llvm[tools,target-aarch64]:arm64-windows
+                $prefix = "${{github.workspace}}\vcpkg\installed\arm64-windows"
+                "LLVM_SYS_180_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LLVM_CONFIG_PATH=$prefix\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "$prefix\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-                cd llvm-build
-                dir
 
           - name: Build Windows arm64 Debug
             shell: pwsh
