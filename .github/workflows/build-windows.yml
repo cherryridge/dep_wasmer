@@ -40,7 +40,8 @@ jobs:
             id: llvm
             run: |
                 cd wasmer
-                $metajson = cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features | ConvertFrom-Json
+                $metajson = cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features | ConvertFrom-Json -AsHashTable
+                $metajson
                 $pkg = $metajson.packages | Where-Object { $_.name -eq "llvm-sys" } | Select-Object -First 1
                 $sysMajor = [int]($pkg.version.Split('.')[0])
                 $llvmMajor = [math]::Floor($sysMajor / 10)
