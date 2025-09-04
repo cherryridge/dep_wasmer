@@ -38,9 +38,12 @@ jobs:
           - name: Install LLVM 18
             shell: pwsh
             run: |
+                dir
                 mkdir llvm
                 cd llvm
+                dir
                 Invoke-WebRequest -Uri https://github.com/wasmerio/llvm-custom-builds/releases/download/18.x/llvm-windows-amd64.tar.xz -OutFile llvm.tar.xz
+                dir
                 7z x llvm.tar.xz
                 7z x llvm.tar
                 dir
