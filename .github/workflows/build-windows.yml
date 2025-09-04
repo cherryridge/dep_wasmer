@@ -41,7 +41,7 @@ jobs:
             run: |
                 $metajson = cargo metadata -p wasmer-c-api --features "$env:WASMER_FEATURES" --no-default-features --format-version=1 | ConvertFrom-Json
                 $pkg = $metajson.packages | Where-Object { $_.name -eq "llvm-sys" } | Select-Object -First 1
-                $sysMajor = [int]($crateVer.Split('.')[0])
+                $sysMajor = [int]($pkg.version.Split('.')[0])
                 $llvmMajor = [math]::Floor($sysMajor / 10)
                 $llvmMinor = $sysMajor % 10
                 $version = "$llvmMajor.$llvmMinor"
