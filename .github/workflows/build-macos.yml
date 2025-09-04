@@ -39,14 +39,26 @@ jobs:
                 toolchain: stable
                 targets: x86_64-apple-darwin, aarch64-apple-darwin
 
-          - name: Get Additional Resources
+          - name: Resolve LLVM Version
             shell: bash
+            id: llvm
             run: |
-                echo ${{inputs.commit-sha}} >> VERSION.txt
-                mkdir -p temp/include
-                cp -a bgfx/include/* temp/include
-                cp -a bx/include/* temp/include
-                cp -a bimg/include/* temp/include
+                cd wasmer
+                cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features > meta.json
+                ver=$(jq -r '.packages[] | select(.name=="llvm-sys") | .version' meta.json)
+                sysMajor=${ver%%.*}
+                llvmMajor=$((sysMajor / 10))
+                llvmMinor=$((sysMajor % 10))
+                #LLVM don't have version 18.0 and I don't know why llvm-sys' version is 180 instead of 181
+                #version="${llvmMajor}.${llvmMinor}"
+                version="${llvmMajor}"
+                echo "sysMajor=$sysMajor" >> $GITHUB_OUTPUT
+                echo "version=$version" >> $GITHUB_OUTPUT
+
+          - name: Install LLVM
+            uses: KyleMayes/install-llvm-action@v2
+            with:
+                version: ${{steps.llvm.outputs.version}}
 
           - name: Build MacOS x64
             shell: bash

@@ -17,7 +17,7 @@ on:
                 required: true
 
 jobs:
-    x64:
+    build:
         runs-on: windows-latest
         steps:
 
@@ -35,12 +35,12 @@ jobs:
                 toolchain: stable
                 targets: x86_64-pc-windows-msvc
 
-          - name: Get LLVM 18
+          - name: Install LLVM 18
             shell: pwsh
             run: |
-                Invoke-WebRequest -Uri https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-pc-windows-msvc.tar.xz -OutFile llvm.tar.xz
-                7z x llvm.tar.xz
-                7z x llvm.tar
+                Invoke-WebRequest -Uri https://github.com/wasmerio/llvm-custom-builds/releases/download/18.x/llvm-windows-amd64.tar.xz -OutFile llvm.tar.xz
+                tar -xJf llvm.tar.xz
+                dir
                 $prefix = "${{github.workspace}}\clang+llvm-18.1.8-x86_64-pc-windows-msvc"
                 "LLVM_SYS_180_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LLVM_CONFIG_PATH=$prefix\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -72,16 +72,7 @@ jobs:
           - name: Upload Archive
             uses: actions/upload-artifact@v4
             with:
-                name: wasmer_windows_x64
+                name: wasmer_windows
                 path: |
                     *.7z
                 retention-days: 7
-
-    arm64:
-        runs-on: windows-latest
-        steps:
-
-          - name: Complete
-            shell: pwsh
-            run: |
-                echo "Windows arm64 build is not supported."

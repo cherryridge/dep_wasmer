@@ -20,10 +20,6 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-            
-          - name: stop
-            shell: bash
-            run: ffeuhifweui
 
           - name: Checkout Wasmer
             uses: actions/checkout@v4
@@ -39,63 +35,68 @@ jobs:
                 toolchain: stable
                 targets: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu
 
-          - name: Install Dependencies
+          - name: Install LLVM 18
             shell: bash
             run: |
-                sudo apt update
-                sudo apt install libgl-dev
-                sudo dpkg --add-architecture arm64
-                sudo sed -ri '/^Components:/a Architectures: amd64' "/etc/apt/sources.list.d/ubuntu.sources"
-                sudo tee /etc/apt/sources.list.d/ubuntu-ports.list >/dev/null <<'EOF'
-                    deb [arch=arm64 signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] http://ports.ubuntu.com/ubuntu-ports noble main universe restricted multiverse
-                    deb [arch=arm64 signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] http://ports.ubuntu.com/ubuntu-ports noble-updates main universe restricted multiverse
-                    deb [arch=arm64 signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] http://ports.ubuntu.com/ubuntu-ports noble-backports main universe restricted multiverse
-                    deb [arch=arm64 signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] http://ports.ubuntu.com/ubuntu-ports noble-security main universe restricted multiverse
-                EOF
-                sudo apt update
-                sudo apt install g++-aarch64-linux-gnu libgl-dev:arm64
+                wget -O llvm.tar.xz https://github.com/wasmerio/llvm-custom-builds/releases/download/18.x/llvm-linux-amd64.tar.xz
+                tar -xf llvm.tar.xz
+                ls
 
-          - name: Build Linux x64
+          - name: Resolve LLVM Version
+            shell: bash
+            id: llvm
+            run: |
+                cd wasmer
+                cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features > meta.json
+                ver=$(jq -r '.packages[] | select(.name=="llvm-sys") | .version' meta.json)
+                sysMajor=${ver%%.*}
+                llvmMajor=$((sysMajor / 10))
+                llvmMinor=$((sysMajor % 10))
+                echo "sysMajor=$sysMajor" >> $GITHUB_OUTPUT
+                echo "llvmMajor=$llvmMajor" >> $GITHUB_OUTPUT
+                echo "llvmMinor=$llvmMinor" >> $GITHUB_OUTPUT
+
+          - name: Build Linux x64 Debug
             shell: bash
             run: |
-                cd bgfx
-                ../bx/tools/bin/linux/genie --with-tools --gcc=linux-gcc --platform=x64 gmake
-                cd .build/projects/gmake-linux-gcc
-                make -j$(nproc) config=debug64 CFLAGS="-O0 -g3 -fno-omit-frame-pointer" CXXFLAGS="-O0 -g3 -fno-omit-frame-pointer" bgfx bimg bx
-                make -j$(nproc) config=release64 bgfx bimg bx shaderc
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target x86_64-unknown-linux-gnu --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
+
+          - name: Build Linux x64 Release
+            shell: bash
+            run: |
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target x86_64-unknown-linux-gnu --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
 
           - name: Build Linux arm64
             shell: bash
             run: |
-                sudo update-alternatives --install /usr/bin/strip strip /usr/bin/aarch64-linux-gnu-strip 100
-                cd bgfx
-                ../bx/tools/bin/linux/genie --with-tools --gcc=linux-arm-gcc --platform=ARM64 gmake
-                cd .build/projects/gmake-linux-arm-gcc
-                sed -i 's/-m64//g' *
-                make -j$(nproc) ARCH= CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ AR=aarch64-linux-gnu-ar RANLIB=aarch64-linux-gnu-ranlib config=debug64 CFLAGS="-O0 -g3 -fno-omit-frame-pointer" CXXFLAGS="-O0 -g3 -fno-omit-frame-pointer" bgfx bimg bx
-                make -j$(nproc) ARCH= CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ AR=aarch64-linux-gnu-ar RANLIB=aarch64-linux-gnu-ranlib config=release64 bgfx bimg bx shaderc
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target aarch64-unknown-linux-gnu --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
+
+          - name: Build Linux arm64
+            shell: bash
+            run: |
+                
 
           - name: Compress Product
             shell: bash
             run: |
                 echo ${{inputs.commit-sha}} >> VERSION.txt
                 mkdir -p temp/include
-                cp -a bgfx/include/* temp/include
-                cp -a bx/include/* temp/include
-                cp -a bimg/include/* temp/include
-                mkdir x64
-                mkdir arm64
-                mv bgfx/.build/linux64_gcc/bin/shadercRelease x64/shaderc
-                mv bgfx/.build/linux32_arm_gcc/bin/shadercRelease arm64/shaderc
-                7z a bgfx_linux_x64_debug.7z ./bgfx/.build/linux64_gcc/bin/libbgfxDebug.a ./bgfx/.build/linux64_gcc/bin/libbxDebug.a ./bgfx/.build/linux64_gcc/bin/libbimgDebug.a ./x64/shaderc ./temp/include VERSION.txt
-                7z a bgfx_linux_x64_release.7z ./bgfx/.build/linux64_gcc/bin/libbgfxRelease.a ./bgfx/.build/linux64_gcc/bin/libbxRelease.a ./bgfx/.build/linux64_gcc/bin/libbimgRelease.a ./x64/shaderc ./temp/include VERSION.txt
-                7z a bgfx_linux_arm64_debug.7z ./bgfx/.build/linux32_arm_gcc/bin/libbgfxDebug.a ./bgfx/.build/linux32_arm_gcc/bin/libbxDebug.a ./bgfx/.build/linux32_arm_gcc/bin/libbimgDebug.a ./arm64/shaderc ./temp/include VERSION.txt
-                7z a bgfx_linux_arm64_release.7z ./bgfx/.build/linux32_arm_gcc/bin/libbgfxRelease.a ./bgfx/.build/linux32_arm_gcc/bin/libbxRelease.a ./bgfx/.build/linux32_arm_gcc/bin/libbimgRelease.a ./arm64/shaderc ./temp/include VERSION.txt
+                cp -a wasmer/lib/c-api/tests/wasm-c-api/include/* temp/include
+                cp wasmer/lib/c-api/wasmer.h temp/include
+                cp wasmer/lib/c-api/wasmer_wasm.h temp/include
+
+                7z a wasmer_linux_x64_debug.7z  ./temp/include VERSION.txt
+                7z a wasmer_linux_x64_release.7z  ./temp/include VERSION.txt
+                7z a wasmer_linux_arm64_debug.7z  ./temp/include VERSION.txt
+                7z a wasmer_linux_arm64_release.7z  ./temp/include VERSION.txt
 
           - name: Upload Archive
             uses: actions/upload-artifact@v4
             with:
-                name: bgfx_linux
+                name: wasmer_linux
                 path: |
                     *.7z
                 retention-days: 7
