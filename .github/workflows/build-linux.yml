@@ -46,6 +46,13 @@ jobs:
                 linker = "aarch64-linux-gnu-gcc"
                 ar = "aarch64-linux-gnu-ar"
                 EOF
+                rustup target add aarch64-unknown-linux-gnu
+                cd wasmer
+                rustup show active-toolchain
+                rustup target list --installed
+                rustc --print target-libdir --target aarch64-unknown-linux-gnu
+                which aarch64-linux-gnu-gcc
+                which llvm-config && llvm-config --version
 
           - name: Install LLVM 18
             shell: bash
@@ -71,6 +78,8 @@ jobs:
           - name: Build Linux arm64 Debug
             shell: bash
             env:
+                LLVM_SYS_180_PREFIX: ${{github.workspace}}/llvm
+                LLVM_CONFIG_PATH: ${{github.workspace}}/llvm/bin/llvm-config
                 CC_aarch64_unknown_linux-gnu: aarch64-linux-gnu-gcc
                 CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
             run: |
@@ -80,6 +89,8 @@ jobs:
           - name: Build Linux arm64 Release
             shell: bash
             env:
+                LLVM_SYS_180_PREFIX: ${{github.workspace}}/llvm
+                LLVM_CONFIG_PATH: ${{github.workspace}}/llvm/bin/llvm-config
                 CC_aarch64_unknown_linux-gnu: aarch64-linux-gnu-gcc
                 CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
             run: |
