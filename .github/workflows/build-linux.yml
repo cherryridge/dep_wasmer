@@ -38,23 +38,11 @@ jobs:
           - name: Install LLVM 18
             shell: bash
             run: |
+                mkdir llvm
+                cd llvm
                 wget -O llvm.tar.xz https://github.com/wasmerio/llvm-custom-builds/releases/download/18.x/llvm-linux-amd64.tar.xz
                 tar -xf llvm.tar.xz
-                ls
-
-          - name: Resolve LLVM Version
-            shell: bash
-            id: llvm
-            run: |
-                cd wasmer
-                cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features > meta.json
-                ver=$(jq -r '.packages[] | select(.name=="llvm-sys") | .version' meta.json)
-                sysMajor=${ver%%.*}
-                llvmMajor=$((sysMajor / 10))
-                llvmMinor=$((sysMajor % 10))
-                echo "sysMajor=$sysMajor" >> $GITHUB_OUTPUT
-                echo "llvmMajor=$llvmMajor" >> $GITHUB_OUTPUT
-                echo "llvmMinor=$llvmMinor" >> $GITHUB_OUTPUT
+                echo "${{github.workspace}}/llvm/bin" >> $GITHUB_PATH
 
           - name: Build Linux x64 Debug
             shell: bash
