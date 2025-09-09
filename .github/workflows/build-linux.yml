@@ -32,7 +32,7 @@ jobs:
           - name: Install Rust
             uses: dtolnay/rust-toolchain@v1
             with:
-                toolchain: stable
+                toolchain: 1.84.0
                 targets: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu
 
           - name: Install Cross Compiler Toolchain
@@ -40,6 +40,12 @@ jobs:
             run: |
                 sudo apt update
                 sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+                mkdir -p .cargo
+                cat > .cargo/config.toml <<'EOF'
+                [target.aarch64-unknown-linux-gnu]
+                linker = "aarch64-linux-gnu-gcc"
+                ar = "aarch64-linux-gnu-ar"
+                EOF
 
           - name: Install LLVM 18
             shell: bash
@@ -65,7 +71,8 @@ jobs:
           - name: Build Linux arm64 Debug
             shell: bash
             env:
-                CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+                CC_aarch64_unknown_linux-gnu: aarch64-linux-gnu-gcc
+                CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
             run: |
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target aarch64-unknown-linux-gnu --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
@@ -73,7 +80,8 @@ jobs:
           - name: Build Linux arm64 Release
             shell: bash
             env:
-                CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+                CC_aarch64_unknown_linux-gnu: aarch64-linux-gnu-gcc
+                CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
             run: |
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target aarch64-unknown-linux-gnu --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
