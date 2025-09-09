@@ -33,22 +33,19 @@ jobs:
             uses: dtolnay/rust-toolchain@v1
             with:
                 toolchain: stable
-                targets: x86_64-pc-windows-msvc
+                targets: x86_64-pc-windows-msvc
 
-          - name: Maybe Conda Can Save Us (Probably not)
-            uses: conda-incubator/setup-miniconda@v3
-            with:
-                auto-activate-base: true
-                activate-environment: ""
-
-          - name: LLVM
+          - name: Install LLVM 18
             shell: pwsh
             run: |
-                conda config --add channels conda-forge
-                conda install -y llvmdev=18
-                "LLVM_SYS_180_PREFIX=$env:CONDA_PREFIX\Library" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                "LLVM_CONFIG_PATH=$env:CONDA_PREFIX\Library\bin\llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                "$env:CONDA_PREFIX\Library\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+                mkdir llvm
+                cd llvm
+                wget -O llvm.tar.xz https://github.com/wasmerio/llvm-custom-builds/releases/download/18.x/llvm-windows-amd64.tar.xz
+                7z x llvm.tar.xz
+                7z x llvm.tar
+                "LLVM_SYS_180_PREFIX=${{github.workspace}}/llvm" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "LLVM_CONFIG_PATH=${{github.workspace}}/llvm/bin/llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "${{github.workspace}}/llvm/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
           - name: Build Windows x64 Debug
             shell: pwsh
