@@ -51,13 +51,13 @@ jobs:
             shell: pwsh
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat,staticlib" -- -Cdebuginfo=2 -Ctarget-feature=+crt-static --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 -Ctarget-feature=+crt-static --crate-type=staticlib
 
           - name: Build Windows x64 Release
             shell: pwsh
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat,staticlib" --release -- -Ctarget-feature=+crt-static --crate-type=staticlib
+                cargo rustc -p wasmer-c-api --target x86_64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- -Ctarget-feature=+crt-static --crate-type=staticlib
 
           - name: Compress Product
             shell: pwsh
