@@ -56,7 +56,7 @@ jobs:
                 wget -O llvm.tar.xz https://github.com/wasmerio/llvm-custom-builds/releases/download/18.x/llvm-linux-amd64.tar.xz
                 tar -xf llvm.tar.xz
                 echo "${{github.workspace}}/llvm/bin" >> $GITHUB_PATH
-                cd wasmer
+                cd ../wasmer
                 rustup show active-toolchain
                 rustup target list --installed
                 rustc --print target-libdir --target aarch64-unknown-linux-gnu
