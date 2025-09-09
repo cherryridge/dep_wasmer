@@ -40,7 +40,7 @@ jobs:
             run: |
                 mkdir llvm
                 cd llvm
-                wget -O llvm.tar.xz https://github.com/wasmerio/llvm-custom-builds/releases/download/18.x/llvm-windows-amd64.tar.xz
+                Invoke-WebRequest -OutFile llvm.tar.xz https://github.com/wasmerio/llvm-custom-builds/releases/download/18.x/llvm-windows-amd64.tar.xz
                 7z x llvm.tar.xz
                 7z x llvm.tar
                 "LLVM_SYS_180_PREFIX=${{github.workspace}}/llvm" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
