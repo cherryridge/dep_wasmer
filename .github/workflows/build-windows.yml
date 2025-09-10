@@ -17,7 +17,7 @@ on:
                 required: true
 
 jobs:
-    build:
+    x64:
         runs-on: windows-latest
         steps:
 
@@ -49,25 +49,12 @@ jobs:
                 "llvmMajor=$llvmMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
                 "llvmMinor=$llvmMinor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
-          - name: Enable MSVC toolchain env
-            uses: ilammy/msvc-dev-cmd@v1
-            with:
-              arch: x64
-
-          - name: Install Ninja
-            uses: llvm/actions/install-ninja@main
-
-          - name: Build LLVM ${{steps.llvm.outputs.llvmMajor}}.${{steps.llvm.outputs.llvmMinor}}
+          - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
             shell: pwsh
             run: |
-                git clone https://github.com/llvm/llvm-project --depth 1 --branch release/${{steps.llvm.outputs.llvmMajor}}.x
-                cd llvm-project
-                mkdir build
-                cmake -S llvm -B build -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_INSTALL_PREFIX="$PWD/install" -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TOOLS=ON -DLLVM_INCLUDE_UTILS=OFF -DLLVM_OPTIMIZED_TABLEGEN=ON -DLLVM_TARGETS_TO_BUILD="X86;AArch64" -DLLVM_INCLUDE_BENCHMARKS=OFF -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_LLVM_DYLIB=OFF
-                cmake --build build --config MinSizeRel --parallel
-                cd build
-                dir
-                $prefix = "${{github.workspace}}/llvm-project/${{steps.llvm.outputs.llvmMajor}}.${{steps.llvm.outputs.llvmMinor}}-x64"
+                Invoke-WebRequest -Uri "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_windows_x64.7z" -OutFile llvm.7z
+                7z x llvm.7z -ollvm
+                $prefix = "${{github.workspace}}/llvm"
                 "LLVM_SYS_${{steps.llvm.outputs.sysVersion}}_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LLVM_CONFIG_PATH=$prefix/bin/llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "$prefix/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -98,7 +85,80 @@ jobs:
           - name: Upload Archive
             uses: actions/upload-artifact@v4
             with:
-                name: wasmer_windows
+                name: wasmer_windows_x64
+                path: |
+                    *.7z
+                retention-days: 7
+
+    arm64:
+        runs-on: windows-latest
+        steps:
+
+          - name: Checkout Wasmer
+            uses: actions/checkout@v4
+            with:
+                repository: wasmerio/wasmer
+                path: wasmer
+                ref: ${{inputs.commit-sha}}
+                submodules: recursive
+
+          - name: Install Rust
+            uses: dtolnay/rust-toolchain@v1
+            with:
+                toolchain: stable
+                targets: aarch64-pc-windows-msvc
+
+          - name: Resolve LLVM Version
+            shell: pwsh
+            id: llvm
+            run: |
+                cd wasmer
+                $metajson = cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features | ConvertFrom-Json -AsHashTable
+                $pkg = $metajson.packages | Where-Object { $_.name -eq "llvm-sys" } | Select-Object -First 1
+                $sysMajor = [int]($pkg.version.Split('.')[0])
+                $llvmMajor = [math]::Floor($sysMajor / 10)
+                $llvmMinor = $sysMajor % 10
+                "sysMajor=$sysMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                "llvmMajor=$llvmMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                "llvmMinor=$llvmMinor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+          - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
+            shell: pwsh
+            run: |
+                Invoke-WebRequest -Uri "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_windows_arm64.7z" -OutFile llvm.7z
+                7z x llvm.7z -ollvm
+                $prefix = "${{github.workspace}}/llvm"
+                "LLVM_SYS_${{steps.llvm.outputs.sysVersion}}_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "LLVM_CONFIG_PATH=$prefix/bin/llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "$prefix/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          - name: Build Windows arm64 Debug
+            shell: pwsh
+            run: |
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 -Ctarget-feature=+crt-static --crate-type=staticlib
+
+          - name: Build Windows arm64 Release
+            shell: pwsh
+            run: |
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "llvm,wat" --release -- -Ctarget-feature=+crt-static --crate-type=staticlib
+
+          - name: Compress Product
+            shell: pwsh
+            run: |
+                echo ${{inputs.commit-sha}} >> VERSION.txt
+                mkdir temp\include
+                cp -r wasmer\lib\c-api\tests\wasm-c-api\include\* temp\include
+                cp wasmer\lib\c-api\wasmer.h temp\include
+                cp wasmer\lib\c-api\wasmer_wasm.h temp\include
+                7z a wasmer_windows_arm64_debug.7z .\wasmer\target\aarch64-pc-windows-msvc\debug\wasmer.lib .\wasmer\target\aarch64-pc-windows-msvc\debug\wasmer.pdb .\temp\include VERSION.txt
+                7z a wasmer_windows_arm64_release.7z .\wasmer\target\aarch64-pc-windows-msvc\release\wasmer.lib .\temp\include VERSION.txt
+
+          - name: Upload Archive
+            uses: actions/upload-artifact@v4
+            with:
+                name: wasmer_windows_arm64
                 path: |
                     *.7z
                 retention-days: 7
