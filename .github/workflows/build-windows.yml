@@ -33,19 +33,44 @@ jobs:
             uses: dtolnay/rust-toolchain@v1
             with:
                 toolchain: stable
-                targets: x86_64-pc-windows-msvc
+                targets: x86_64-pc-windows-msvc
 
-          - name: Install LLVM 18
+          - name: Resolve LLVM Version
+            shell: pwsh
+            id: llvm
+            run: |
+                cd wasmer
+                $metajson = cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features | ConvertFrom-Json -AsHashTable
+                $pkg = $metajson.packages | Where-Object { $_.name -eq "llvm-sys" } | Select-Object -First 1
+                $sysMajor = [int]($pkg.version.Split('.')[0])
+                $llvmMajor = [math]::Floor($sysMajor / 10)
+                $llvmMinor = $sysMajor % 10
+                "sysMajor=$sysMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                "llvmMajor=$llvmMajor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                "llvmMinor=$llvmMinor" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+          - name: Enable MSVC toolchain env
+            uses: ilammy/msvc-dev-cmd@v1
+            with:
+              arch: x64
+
+          - name: Install Ninja
+            uses: llvm/actions/install-ninja@main
+
+          - name: Build LLVM ${{steps.llvm.outputs.llvmMajor}}.${{steps.llvm.outputs.llvmMinor}}
             shell: pwsh
             run: |
-                mkdir llvm
-                cd llvm
-                Invoke-WebRequest -OutFile llvm.tar.xz https://github.com/wasmerio/llvm-custom-builds/releases/download/18.x/llvm-windows-amd64.tar.xz
-                7z x llvm.tar.xz
-                7z x llvm.tar
-                "LLVM_SYS_180_PREFIX=${{github.workspace}}/llvm" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                "LLVM_CONFIG_PATH=${{github.workspace}}/llvm/bin/llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-                "${{github.workspace}}/llvm/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+                git clone https://github.com/llvm/llvm-project --depth 1 --branch release/${{steps.llvm.outputs.llvmMajor}}.x
+                cd llvm-project
+                mkdir build
+                cmake -S llvm -B build -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_INSTALL_PREFIX="$PWD/install" -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TOOLS=ON -DLLVM_INCLUDE_UTILS=OFF -DLLVM_OPTIMIZED_TABLEGEN=ON -DLLVM_TARGETS_TO_BUILD="X86;AArch64" -DLLVM_INCLUDE_BENCHMARKS=OFF -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_LLVM_DYLIB=OFF
+                cmake --build build --config MinSizeRel --parallel
+                cd build
+                dir
+                $prefix = "${{github.workspace}}/llvm-project/${{steps.llvm.outputs.llvmMajor}}.${{steps.llvm.outputs.llvmMinor}}-x64"
+                "LLVM_SYS_${{steps.llvm.outputs.sysVersion}}_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "LLVM_CONFIG_PATH=$prefix/bin/llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                "$prefix/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
           - name: Build Windows x64 Debug
             shell: pwsh
