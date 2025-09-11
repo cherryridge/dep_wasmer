@@ -93,6 +93,11 @@ jobs:
         runs-on: macos-latest
         steps:
 
+          - name: Install Deps
+            shell: bash
+            run: |
+                brew install zstd
+
           - name: Checkout Wasmer
             uses: actions/checkout@v4
             with:
