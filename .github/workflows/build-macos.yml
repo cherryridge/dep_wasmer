@@ -17,13 +17,9 @@ on:
                 required: true
 
 jobs:
-    build:
-        runs-on: macos-latest
+    x64:
+        runs-on: macos-13
         steps:
-
-          - name: stop
-            shell: bash
-            run: ffeuhifweui
 
           - name: Checkout Wasmer
             uses: actions/checkout@v4
@@ -37,7 +33,7 @@ jobs:
             uses: dtolnay/rust-toolchain@v1
             with:
                 toolchain: stable
-                targets: x86_64-apple-darwin, aarch64-apple-darwin
+                targets: x86_64-apple-darwin
 
           - name: Resolve LLVM Version
             shell: bash
@@ -49,77 +45,119 @@ jobs:
                 sysMajor=${ver%%.*}
                 llvmMajor=$((sysMajor / 10))
                 llvmMinor=$((sysMajor % 10))
-                #LLVM don't have version 18.0 and I don't know why llvm-sys' version is 180 instead of 181
-                #version="${llvmMajor}.${llvmMinor}"
-                version="${llvmMajor}"
                 echo "sysMajor=$sysMajor" >> $GITHUB_OUTPUT
-                echo "version=$version" >> $GITHUB_OUTPUT
+                echo "llvmMajor=$llvmMajor" >> $GITHUB_OUTPUT
+                echo "llvmMinor=$llvmMinor" >> $GITHUB_OUTPUT
 
-          - name: Install LLVM
-            uses: KyleMayes/install-llvm-action@v2
-            with:
-                version: ${{steps.llvm.outputs.version}}
-
-          - name: Build MacOS x64
+          - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
             shell: bash
             run: |
-                cd bgfx
-                ../bx/tools/bin/darwin/genie --with-tools --platform=x64 --xcode=osx xcode11
-                cd .build/projects/xcode11-osx
-                xcodebuild -project bgfx.xcodeproj -scheme bgfx -configuration Debug ARCHS=x86_64
-                xcodebuild -project bx.xcodeproj -scheme bx -configuration Debug ARCHS=x86_64
-                xcodebuild -project bimg.xcodeproj -scheme bimg -configuration Debug ARCHS=x86_64
-                xcodebuild -project bgfx.xcodeproj -scheme bgfx -configuration Release ARCHS=x86_64
-                xcodebuild -project bx.xcodeproj -scheme bx -configuration Release ARCHS=x86_64
-                xcodebuild -project bimg.xcodeproj -scheme bimg -configuration Release ARCHS=x86_64
-                xcodebuild -project fcpp.xcodeproj -scheme fcpp -configuration Debug ARCHS=x86_64
-                xcodebuild -project glslang.xcodeproj -scheme glslang -configuration Debug ARCHS=x86_64
-                xcodebuild -project glsl-optimizer.xcodeproj -scheme glsl-optimizer -configuration Debug ARCHS=x86_64
-                xcodebuild -project spirv-opt.xcodeproj -scheme spirv-opt -configuration Debug ARCHS=x86_64
-                xcodebuild -project spirv-cross.xcodeproj -scheme spirv-cross -configuration Debug ARCHS=x86_64
-                xcodebuild -project shaderc.xcodeproj -scheme "shaderc Release" -configuration Release ARCHS=x86_64
-                cd ../..
-                ls
+                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos_x64.7z" -O llvm.7z
+                7z x llvm.7z -ollvm
+                $prefix = "${{github.workspace}}/llvm"
+                echo "LLVM_SYS_${{steps.llvm.outputs.sysVersion}}_PREFIX=$prefix" >> $GITHUB_ENV
+                echo "LLVM_CONFIG_PATH=$prefix/bin/llvm-config" >> $GITHUB_ENV
+                echo "$prefix/bin" >> $GITHUB_PATH
 
-          - name: Compress Product x64
+          - name: Build MacOS x64 Debug
             shell: bash
             run: |
-                mv bgfx/scripts/shadercRelease shaderc
-                7z a bgfx_macos_x64_debug.7z ./bgfx/scripts/libbgfxDebug.a ./bx/scripts/libbxDebug.a ./bimg/scripts/libbimgDebug.a shaderc ./temp/include VERSION.txt
-                7z a bgfx_macos_x64_release.7z ./bgfx/scripts/libbgfxRelease.a ./bx/scripts/libbxRelease.a ./bimg/scripts/libbimgRelease.a shaderc ./temp/include VERSION.txt
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target x86_64-apple-darwin --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
 
-          - name: Build MacOS arm64
+          - name: Build MacOS x64 Release
             shell: bash
             run: |
-                cd bgfx
-                ../bx/tools/bin/darwin/genie --with-tools --platform=ARM64 --xcode=osx xcode11
-                cd .build/projects/xcode11-osx
-                xcodebuild -project bgfx.xcodeproj -scheme bgfx -configuration Debug ARCHS=arm64
-                xcodebuild -project bx.xcodeproj -scheme bx -configuration Debug ARCHS=arm64
-                xcodebuild -project bimg.xcodeproj -scheme bimg -configuration Debug ARCHS=arm64
-                xcodebuild -project bgfx.xcodeproj -scheme bgfx -configuration Release ARCHS=arm64
-                xcodebuild -project bx.xcodeproj -scheme bx -configuration Release ARCHS=arm64
-                xcodebuild -project bimg.xcodeproj -scheme bimg -configuration Release ARCHS=arm64
-                xcodebuild -project fcpp.xcodeproj -scheme fcpp -configuration Debug ARCHS=arm64
-                xcodebuild -project glslang.xcodeproj -scheme glslang -configuration Debug ARCHS=arm64
-                xcodebuild -project glsl-optimizer.xcodeproj -scheme glsl-optimizer -configuration Debug ARCHS=arm64
-                xcodebuild -project spirv-opt.xcodeproj -scheme spirv-opt -configuration Debug ARCHS=arm64
-                xcodebuild -project spirv-cross.xcodeproj -scheme spirv-cross -configuration Debug ARCHS=arm64
-                xcodebuild -project shaderc.xcodeproj -scheme "shaderc Release" -configuration Release ARCHS=arm64
-                cd ../..
-                ls
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target x86_64-apple-darwin --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
 
-          - name: Compress Product arm64
+          - name: Compress Product
             shell: bash
             run: |
-                mv bgfx/scripts/shadercRelease shaderc
-                7z a bgfx_macos_arm64_debug.7z ./bgfx/scripts/libbgfxDebug.a ./bx/scripts/libbxDebug.a ./bimg/scripts/libbimgDebug.a shaderc ./temp/include VERSION.txt
-                7z a bgfx_macos_arm64_release.7z ./bgfx/scripts/libbgfxRelease.a ./bx/scripts/libbxRelease.a ./bimg/scripts/libbimgRelease.a shaderc ./temp/include VERSION.txt
+                echo ${{inputs.commit-sha}} >> VERSION.txt
+                mkdir -p temp/include
+                cp -a wasmer/lib/c-api/tests/wasm-c-api/include/* temp/include
+                cp wasmer/lib/c-api/wasmer.h temp/include
+                cp wasmer/lib/c-api/wasmer_wasm.h temp/include
+                7z a wasmer_macos_x64_debug.7z ./wasmer/target/x86_64-apple-darwin/debug/libwasmer.a ./temp/include VERSION.txt
+                7z a wasmer_macos_x64_release.7z ./wasmer/target/x86_64-apple-darwin/release/libwasmer.a ./temp/include VERSION.txt
 
           - name: Upload Archive
             uses: actions/upload-artifact@v4
             with:
-                name: bgfx_macos
+                name: wasmer_macos_x64
+                path: |
+                    *.7z
+                retention-days: 7
+    arm64:
+        runs-on: macos-latest
+        steps:
+
+          - name: Checkout Wasmer
+            uses: actions/checkout@v4
+            with:
+                repository: wasmerio/wasmer
+                path: wasmer
+                ref: ${{inputs.commit-sha}}
+                submodules: recursive
+
+          - name: Install Rust
+            uses: dtolnay/rust-toolchain@v1
+            with:
+                toolchain: stable
+                targets: aarch64-apple-darwin
+
+          - name: Resolve LLVM Version
+            shell: bash
+            id: llvm
+            run: |
+                cd wasmer
+                cargo metadata --format-version=1 --features "wasmer-c-api/llvm,wasmer-c-api/wat" --no-default-features > meta.json
+                ver=$(jq -r '.packages[] | select(.name=="llvm-sys") | .version' meta.json)
+                sysMajor=${ver%%.*}
+                llvmMajor=$((sysMajor / 10))
+                llvmMinor=$((sysMajor % 10))
+                echo "sysMajor=$sysMajor" >> $GITHUB_OUTPUT
+                echo "llvmMajor=$llvmMajor" >> $GITHUB_OUTPUT
+                echo "llvmMinor=$llvmMinor" >> $GITHUB_OUTPUT
+
+          - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
+            shell: bash
+            run: |
+                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos_arm64.7z" -O llvm.7z
+                7z x llvm.7z -ollvm
+                $prefix = "${{github.workspace}}/llvm"
+                echo "LLVM_SYS_${{steps.llvm.outputs.sysVersion}}_PREFIX=$prefix" >> $GITHUB_ENV
+                echo "LLVM_CONFIG_PATH=$prefix/bin/llvm-config" >> $GITHUB_ENV
+                echo "$prefix/bin" >> $GITHUB_PATH
+
+          - name: Build MacOS arm64 Debug
+            shell: bash
+            run: |
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target aarch64-apple-darwin --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
+
+          - name: Build MacOS arm64 Release
+            shell: bash
+            run: |
+                cd wasmer
+                cargo rustc -p wasmer-c-api --target aarch64-apple-darwin --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
+
+          - name: Compress Product
+            shell: bash
+            run: |
+                echo ${{inputs.commit-sha}} >> VERSION.txt
+                mkdir -p temp/include
+                cp -a wasmer/lib/c-api/tests/wasm-c-api/include/* temp/include
+                cp wasmer/lib/c-api/wasmer.h temp/include
+                cp wasmer/lib/c-api/wasmer_wasm.h temp/include
+                7z a wasmer_macos_arm64_debug.7z ./wasmer/target/aarch64-apple-darwin/debug/libwasmer.a ./temp/include VERSION.txt
+                7z a wasmer_macos_arm64_release.7z ./wasmer/target/aarch64-apple-darwin/release/libwasmer.a ./temp/include VERSION.txt
+
+          - name: Upload Archive
+            uses: actions/upload-artifact@v4
+            with:
+                name: wasmer_lmacos_arm64
                 path: |
                     *.7z
                 retention-days: 7
