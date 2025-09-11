@@ -18,7 +18,7 @@ on:
 
 jobs:
     x64:
-        runs-on: macos-13
+        runs-on: macos-latest
         steps:
 
           - name: Checkout Wasmer
