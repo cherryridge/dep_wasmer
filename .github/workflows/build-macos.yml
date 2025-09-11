@@ -96,7 +96,14 @@ jobs:
           - name: Install Deps
             shell: bash
             run: |
-                brew install zstd
+                brew update
+                brew install zstd pkg-config
+                echo "PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig" >> $GITHUB_ENV
+                echo "LIBRARY_PATH=/opt/homebrew/lib" >> $GITHUB_ENV
+                echo "CPATH=/opt/homebrew/include" >> $GITHUB_ENV
+                echo "LDFLAGS=-L/opt/homebrew/lib" >> $GITHUB_ENV
+                echo "CFLAGS=-I/opt/homebrew/include" >> $GITHUB_ENV
+                echo "ZSTD_SYS_USE_PKG_CONFIG=1" >> $GITHUB_ENV
 
           - name: Checkout Wasmer
             uses: actions/checkout@v4
