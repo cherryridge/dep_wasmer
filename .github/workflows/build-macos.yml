@@ -54,7 +54,7 @@ jobs:
             run: |
                 wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos_x64.7z" -O llvm.7z
                 7z x llvm.7z -ollvm
-                prefix = "${{github.workspace}}/llvm"
+                prefix="${{github.workspace}}/llvm"
                 echo "LLVM_SYS_${{steps.llvm.outputs.sysVersion}}_PREFIX=$prefix" >> $GITHUB_ENV
                 echo "LLVM_CONFIG_PATH=$prefix/bin/llvm-config" >> $GITHUB_ENV
                 echo "$prefix/bin" >> $GITHUB_PATH
@@ -126,7 +126,7 @@ jobs:
             run: |
                 wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos_arm64.7z" -O llvm.7z
                 7z x llvm.7z -ollvm
-                prefix = "${{github.workspace}}/llvm"
+                prefix="${{github.workspace}}/llvm"
                 echo "LLVM_SYS_${{steps.llvm.outputs.sysVersion}}_PREFIX=$prefix" >> $GITHUB_ENV
                 echo "LLVM_CONFIG_PATH=$prefix/bin/llvm-config" >> $GITHUB_ENV
                 echo "$prefix/bin" >> $GITHUB_PATH
