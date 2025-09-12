@@ -62,7 +62,7 @@ jobs:
           - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
             shell: bash
             run: |
-                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos_x64.7z" -O llvm.7z
+                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos.7z" -O llvm.7z
                 7z x llvm.7z -ollvm
                 prefix="${{github.workspace}}/llvm"
                 echo "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$prefix" >> $GITHUB_ENV
@@ -148,7 +148,7 @@ jobs:
           - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
             shell: bash
             run: |
-                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos_arm64.7z" -O llvm.7z
+                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos.7z" -O llvm.7z
                 7z x llvm.7z -ollvm
                 prefix="${{github.workspace}}/llvm"
                 echo "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$prefix" >> $GITHUB_ENV
