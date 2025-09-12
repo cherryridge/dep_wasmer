@@ -81,13 +81,14 @@ jobs:
                 cp wasmer\lib\c-api\wasmer_wasm.h temp\include
                 7z a wasmer_windows_x64_debug.7z .\wasmer\target\x86_64-pc-windows-msvc\debug\wasmer.lib .\wasmer\target\x86_64-pc-windows-msvc\debug\wasmer.pdb .\temp\include VERSION.txt
                 7z a wasmer_windows_x64_release.7z .\wasmer\target\x86_64-pc-windows-msvc\release\wasmer.lib .\temp\include VERSION.txt
+                dir
 
           - name: Upload Archive
             uses: actions/upload-artifact@v4
             with:
                 name: wasmer_windows_x64
                 path: |
-                    wasmer_windows_x64_debug.7z, wasmer_windows_x64_release.7z
+                    .\wasmer_windows_x64_debug.7z, .\wasmer_windows_x64_release.7z
                 retention-days: 7
 
     arm64:
@@ -160,5 +161,5 @@ jobs:
             with:
                 name: wasmer_windows_arm64
                 path: |
-                    wasmer_windows_arm64_debug.7z, wasmer_windows_arm64_release.7z
+                    .\wasmer_windows_arm64_debug.7z, .\wasmer_windows_arm64_release.7z
                 retention-days: 7

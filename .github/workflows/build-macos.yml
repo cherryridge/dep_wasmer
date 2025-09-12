@@ -35,12 +35,15 @@ jobs:
                 toolchain: stable
                 targets: x86_64-apple-darwin
 
-          - name: Configure Rust
+          - name: Configure Repo (?)
             shell: bash
             run: |
-                rustup show
-                TOOLCHAIN="$(rustup show active-toolchain | awk '{print $1}')"
+                cd wasmer
+                TOOLCHAIN="$(rustup show active-toolchain | awk '{print $1}')"   # e.g. 1.84.0-aarch64-apple-darwin
+                echo "Using toolchain: $TOOLCHAIN"
                 rustup target add --toolchain "$TOOLCHAIN" x86_64-apple-darwin
+                rustc +$TOOLCHAIN --version --verbose
+                ls "$HOME/.rustup/toolchains/$TOOLCHAIN/lib/rustlib/x86_64-apple-darwin/lib" | head
 
           - name: Resolve LLVM Version
             shell: bash
@@ -70,13 +73,15 @@ jobs:
             shell: bash
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target x86_64-apple-darwin --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
+                TOOLCHAIN="$(rustup show active-toolchain | awk '{print $1}')"
+                cargo +$TOOLCHAIN rustc -p wasmer-c-api --target x86_64-apple-darwin --no-default-features --features "llvm,wat" -- -Cdebuginfo=2 --crate-type=staticlib
 
           - name: Build MacOS x64 Release
             shell: bash
             run: |
                 cd wasmer
-                cargo rustc -p wasmer-c-api --target x86_64-apple-darwin --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
+                TOOLCHAIN="$(rustup show active-toolchain | awk '{print $1}')"
+                cargo +$TOOLCHAIN rustc -p wasmer-c-api --target x86_64-apple-darwin --no-default-features --features "llvm,wat" --release -- --crate-type=staticlib
 
           - name: Compress Product
             shell: bash
@@ -94,7 +99,7 @@ jobs:
             with:
                 name: wasmer_macos_x64
                 path: |
-                    wasmer_macos_x64_debug.7z, wasmer_macos_x64_release.7z
+                    ./wasmer_macos_x64_debug.7z, ./wasmer_macos_x64_release.7z
                 retention-days: 7
     arm64:
         runs-on: macos-latest
@@ -178,5 +183,5 @@ jobs:
             with:
                 name: wasmer_macos_arm64
                 path: |
-                    wasmer_macos_arm64_debug.7z, wasmer_macos_arm64_release.7z
+                    ./wasmer_macos_arm64_debug.7z, ./wasmer_macos_arm64_release.7z
                 retention-days: 7

@@ -87,7 +87,7 @@ jobs:
             with:
                 name: wasmer_linux_x64
                 path: |
-                    wasmer_linux_x64_debug.7z, wasmer_linux_x64_release.7z
+                    ./wasmer_linux_x64_debug.7z, ./wasmer_linux_x64_release.7z
                 retention-days: 7
 
     arm64:
@@ -160,5 +160,5 @@ jobs:
             with:
                 name: wasmer_linux_arm64
                 path: |
-                    wasmer_linux_arm64_debug.7z, wasmer_linux_arm64_release.7z
+                    ./wasmer_linux_arm64_debug.7z, ./wasmer_linux_arm64_release.7z
                 retention-days: 7
