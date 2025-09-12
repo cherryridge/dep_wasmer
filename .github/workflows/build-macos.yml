@@ -35,6 +35,13 @@ jobs:
                 toolchain: stable
                 targets: x86_64-apple-darwin
 
+          - name: Configure Rust
+            shell: bash
+            run: |
+                rustup show
+                TOOLCHAIN="$(rustup show active-toolchain | awk '{print $1}')"
+                rustup target add --toolchain "$TOOLCHAIN" x86_64-apple-darwin
+
           - name: Resolve LLVM Version
             shell: bash
             id: llvm
@@ -87,7 +94,7 @@ jobs:
             with:
                 name: wasmer_macos_x64
                 path: |
-                    *.7z
+                    wasmer_macos_x64_debug.7z, wasmer_macos_x64_release.7z
                 retention-days: 7
     arm64:
         runs-on: macos-latest
@@ -169,7 +176,7 @@ jobs:
           - name: Upload Archive
             uses: actions/upload-artifact@v4
             with:
-                name: wasmer_lmacos_arm64
+                name: wasmer_macos_arm64
                 path: |
-                    *.7z
+                    wasmer_macos_arm64_debug.7z, wasmer_macos_arm64_release.7z
                 retention-days: 7
