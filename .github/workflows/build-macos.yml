@@ -18,7 +18,7 @@ on:
 
 jobs:
     x64:
-        runs-on: macos-latest
+        runs-on: macos-13
         steps:
 
           - name: Checkout Wasmer
@@ -34,16 +34,6 @@ jobs:
             with:
                 toolchain: stable
                 targets: x86_64-apple-darwin
-
-          - name: Configure Repo (?)
-            shell: bash
-            run: |
-                cd wasmer
-                TOOLCHAIN="$(rustup show active-toolchain | awk '{print $1}')"   # e.g. 1.84.0-aarch64-apple-darwin
-                echo "Using toolchain: $TOOLCHAIN"
-                rustup target add --toolchain "$TOOLCHAIN" x86_64-apple-darwin
-                rustc +$TOOLCHAIN --version --verbose
-                ls "$HOME/.rustup/toolchains/$TOOLCHAIN/lib/rustlib/x86_64-apple-darwin/lib" | head
 
           - name: Resolve LLVM Version
             shell: bash
@@ -62,8 +52,9 @@ jobs:
           - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
             shell: bash
             run: |
-                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos.7z" -O llvm.7z
-                7z x llvm.7z -ollvm
+                wget "https://github.com/wasmerio/llvm-custom-builds/releases/download/${{steps.llvm.outputs.llvmMajor}}.x/llvm-darwin-amd64.tar.xz" -O llvm.tar.xz
+                mkdir llvm
+                tar -xJvf llvm.tar.xz -C llvm
                 prefix="${{github.workspace}}/llvm"
                 echo "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$prefix" >> $GITHUB_ENV
                 echo "LLVM_CONFIG_PATH=$prefix/bin/llvm-config" >> $GITHUB_ENV
@@ -148,8 +139,9 @@ jobs:
           - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
             shell: bash
             run: |
-                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_macos.7z" -O llvm.7z
-                7z x llvm.7z -ollvm
+                wget "https://github.com/wasmerio/llvm-custom-builds/releases/download/${{steps.llvm.outputs.llvmMajor}}.x/llvm-darwin-aarch64.tar.xz" -O llvm.tar.xz
+                mkdir llvm
+                tar -xJvf llvm.tar.xz -C llvm
                 prefix="${{github.workspace}}/llvm"
                 echo "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$prefix" >> $GITHUB_ENV
                 echo "LLVM_CONFIG_PATH=$prefix/bin/llvm-config" >> $GITHUB_ENV

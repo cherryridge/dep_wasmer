@@ -52,8 +52,9 @@ jobs:
           - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
             shell: pwsh
             run: |
-                Invoke-WebRequest -Uri "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_windows_x64.7z" -OutFile llvm.7z
-                7z x llvm.7z -ollvm
+                Invoke-WebRequest -Uri "https://github.com/wasmerio/llvm-custom-builds/releases/download/${{steps.llvm.outputs.llvmMajor}}.x/llvm-windows-amd64.tar.xz" -OutFile llvm.tar.xz
+                mkdir llvm
+                tar -xJvf llvm.tar.xz -C llvm
                 $prefix = "${{github.workspace}}/llvm"
                 "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$prefix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
                 "LLVM_CONFIG_PATH=$prefix/bin/llvm-config.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -115,7 +116,7 @@ jobs:
                 cd wasmer
                 cargo rustc -p wasmer-c-api --target aarch64-pc-windows-msvc --no-default-features --features "cranelift,wat" -- -Cdebuginfo=2 -Ctarget-feature=+crt-static --crate-type=staticlib 
 
-          - name: Build Windows arm64 Release
+          - name: Build Windows arm64 Release (Cranelift)
             shell: pwsh
             run: |
                 cd wasmer

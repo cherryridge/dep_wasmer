@@ -52,8 +52,9 @@ jobs:
           - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
             shell: bash
             run: |
-                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_linux_x64.7z" -O llvm.7z
-                7z x llvm.7z -ollvm
+                wget "https://github.com/wasmerio/llvm-custom-builds/releases/download/${{steps.llvm.outputs.llvmMajor}}.x/llvm-linux-amd64.tar.xz" -O llvm.tar.xz
+                mkdir llvm
+                tar -xJvf llvm.tar.xz -C llvm
                 prefix="${{github.workspace}}/llvm"
                 echo "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$prefix" >> $GITHUB_ENV
                 echo "LLVM_CONFIG_PATH=$prefix/bin/llvm-config" >> $GITHUB_ENV
@@ -94,6 +95,12 @@ jobs:
         runs-on: ubuntu-24.04-arm
         steps:
 
+          - name: Install Deps
+            shell: bash
+            run: |
+                sudo apt-get update
+                sudo apt-get install -y mold libzstd1 zstd libzstd-dev
+
           - name: Checkout Wasmer
             uses: actions/checkout@v4
             with:
@@ -125,8 +132,9 @@ jobs:
           - name: Get LLVM ${{steps.llvm.outputs.llvmMajor}}
             shell: bash
             run: |
-                wget "https://github.com/cherryridge/dep_llvm/releases/download/${{steps.llvm.outputs.llvmMajor}}/llvm_linux_arm64.7z" -O llvm.7z
-                7z x llvm.7z -ollvm
+                wget "https://github.com/wasmerio/llvm-custom-builds/releases/download/${{steps.llvm.outputs.llvmMajor}}.x/llvm-linux-aarch64.tar.xz" -O llvm.tar.xz
+                mkdir llvm
+                tar -xJvf llvm.tar.xz -C llvm
                 prefix="${{github.workspace}}/llvm"
                 echo "LLVM_SYS_${{steps.llvm.outputs.sysMajor}}_PREFIX=$prefix" >> $GITHUB_ENV
                 echo "LLVM_CONFIG_PATH=$prefix/bin/llvm-config" >> $GITHUB_ENV
